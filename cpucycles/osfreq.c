@@ -42,6 +42,19 @@ static double osfreq(void)
     if (result) return 1000000.0 * result;
   }
 
+  // This is not an accurate measure of MHz but it gets things to build when other measures fail.
+  f = fopen("/proc/cpuinfo","r");
+  if (f) {
+    for (;;) {
+      s = fscanf(f,"BogoMIPS : %lf",&result);
+      if (s > 0) break;
+      if (s == 0) s = fscanf(f,"%*[^\n]\n");
+      if (s < 0) { result = 0; break; }
+    }
+    fclose(f);
+    if (result) return 1000000.0 * result;
+  }
+
   f = popen("/usr/sbin/lsattr -E -l proc0 -a frequency 2>/dev/null","r");
   if (f) {
     s = fscanf(f,"frequency %lf",&result);
