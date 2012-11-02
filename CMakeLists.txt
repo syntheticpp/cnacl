@@ -4,6 +4,10 @@
 project(nacl C)
 cmake_minimum_required(VERSION 2.4)
 
+# Generic hook to allow arbitrary cmake code to be run for preconfiguration.
+if(CNACL_CONFIG_SCRIPT)
+    include(${CNACL_CONFIG_SCRIPT})
+endif()
 
 file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/include")
 file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/include_internal")
