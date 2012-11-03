@@ -24,6 +24,9 @@ foreach(header ${files})
     endforeach()
 endforeach()
 
+message("implementations: ${impls}")
+message("types: ${types}")
+
 
 set(tmp)
 list(APPEND tmp "set(PLAN_IMPLEMENTATIONS\n")
@@ -38,8 +41,8 @@ if(NOT OUTPUT_LOCATION)
     set(OUTPUT_LOCATION "cmake/plans/${abi}_plan.cmake")
 endif()
 
-message("Created new build plan for [${abi}]
-${tempOutStr}
-")
+message("Created new build plan for [${abi}]")
+message("${tempOutStr}")
+message("Writing plan to [${OUTPUT_LOCATION}]")
 
 file(WRITE "${OUTPUT_LOCATION}" "${tmpoutStr}")

@@ -262,7 +262,7 @@ function(makePlan abi)
         WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
     )
     if (NOT EXISTS "${CMAKE_SOURCE_DIR}/cmake/plans/${abi}_plan.cmake")
-        message("Can't find plan for the target ABI.")
+        message("Can't find plan for the target ABI [${abi}].")
         message(FATAL_ERROR "Cross compiling is not supported without a premade plan.")
     endif()
     message("Created new plan for ${abi} at ${CMAKE_SOURCE_DIR}/cmake/plans/${abi}_plan.cmake")
