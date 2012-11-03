@@ -34,7 +34,7 @@ function(makePlan abi outputLocation)
     list(APPEND tmp ")\n")
     string(REPLACE "\n;" "\n" tmpoutStr "${tmp}")
 
-    if(NOT outputLocation)
+    if("${outputLocation}" STREQUAL "")
         set(outputLocation "cmake/plans/${abi}_plan.cmake")
     endif()
 
