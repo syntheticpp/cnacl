@@ -282,7 +282,7 @@ if ("${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "Darwin")
 endif()
 message("Using a [${CMAKE_HOST_SYSTEM_NAME}] toolchain.")
 
-if ( EXISTS "${CMAKE_SOURCE_DIR}/cmake/plans/${abi}_plan.cmake")
+if (NOT EXISTS "${CMAKE_SOURCE_DIR}/cmake/plans/${abi}_plan.cmake")
     makePlan(${abi})
 else()
     message("Using preexisting build plan ${CMAKE_SOURCE_DIR}/cmake/plans/${abi}_plan.cmake")
