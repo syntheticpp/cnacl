@@ -257,11 +257,10 @@ endfunction()
 function(makePlan abi)
     message("Could not find compile plan for this ABI, please wait while one is generated...")
     execute_process(COMMAND "${CMAKE_SOURCE_DIR}/do" WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}")
-    execute_process(COMMAND "${CMAKE_COMMAND}"
-        "-P cmake/MakePlan.cmake"
-        "-DOUTPUT_LOCATION=cmake/plans/${abi}_plan.cmake"
-        WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
-    )
+
+    set(OUTPUT_LOCATION "${CMAKE_SOURCE_DIR}/cmake/plans/${abi}_plan.cmake")
+    include("${CMAKE_SOURCE_DIR}/cmake/MakePlan.cmake")
+
     if (NOT EXISTS "${CMAKE_SOURCE_DIR}/cmake/plans/${abi}_plan.cmake")
         message("Can't find plan for the target ABI [${abi}].")
         message(FATAL_ERROR "Cross compiling is not supported without a premade plan.")
@@ -283,7 +282,7 @@ if ("${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "Darwin")
 endif()
 message("Using a [${CMAKE_HOST_SYSTEM_NAME}] toolchain.")
 
-if (NOT EXISTS "${CMAKE_SOURCE_DIR}/cmake/plans/${abi}_plan.cmake")
+if ( EXISTS "${CMAKE_SOURCE_DIR}/cmake/plans/${abi}_plan.cmake")
     makePlan(${abi})
 else()
     message("Using preexisting build plan ${CMAKE_SOURCE_DIR}/cmake/plans/${abi}_plan.cmake")

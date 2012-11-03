@@ -1,5 +1,3 @@
-#find ./build/ -name '*.h' -exec sed -n -e 's/#define [^ ]*_IMPLEMENTATION "\([^"]*\)"/\1/p' {} \;
-
 file(GLOB abidir build/*/include/*)
 foreach(dir ${abidir})
     if(IS_DIRECTORY "${dir}")
@@ -23,10 +21,6 @@ foreach(header ${files})
         endif()
     endforeach()
 endforeach()
-
-message("implementations: ${impls}")
-message("types: ${types}")
-
 
 set(tmp)
 list(APPEND tmp "set(PLAN_IMPLEMENTATIONS\n")
