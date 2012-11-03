@@ -274,6 +274,13 @@ include("${CMAKE_SOURCE_DIR}/cmake/AbiName.cmake")
 AbiName_get(abi)
 message("Detected ABI as ${abi}")
 
+## On apple systems, the assembler is different and it doesn't accept
+## a number of the asm files in NaCl
+if ("${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "Darwin")
+    set(abi "${abi}_apple")
+endif()
+message("Using a [${CMAKE_HOST_SYSTEM_NAME}] toolchain.")
+
 if (NOT EXISTS "${CMAKE_SOURCE_DIR}/cmake/plans/${abi}_plan.cmake")
     makePlan(${abi})
 else()
