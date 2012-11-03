@@ -258,11 +258,12 @@ function(makePlan abi)
     message("Could not find compile plan for this ABI, please wait while one is generated...")
     execute_process(COMMAND "${CMAKE_SOURCE_DIR}/do" WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}")
     execute_process(COMMAND "${CMAKE_COMMAND}" -P "cmake/MakePlan.cmake"
+        "-DOUTPUT_LOCATION=cmake/plans/${abi}_plan.cmake"
         WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
     )
     if (NOT EXISTS "${CMAKE_SOURCE_DIR}/cmake/plans/${abi}_plan.cmake")
         message("Can't find plan for the target ABI.")
-        message(FATAL ERROR "Cross compiling is not supported without a premade plan.")
+        message(FATAL_ERROR "Cross compiling is not supported without a premade plan.")
     endif()
     message("Created new plan for ${abi} at ${CMAKE_SOURCE_DIR}/cmake/plans/${abi}_plan.cmake")
     file(READ "${CMAKE_SOURCE_DIR}/cmake/plans/${abi}_plan.cmake" plan)

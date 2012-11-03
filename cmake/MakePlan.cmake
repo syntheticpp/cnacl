@@ -34,4 +34,12 @@ list(APPEND tmp "${types}")
 list(APPEND tmp ")\n")
 string(REPLACE "\n;" "\n" tmpoutStr "${tmp}")
 
-file(WRITE "cmake/plans/${abi}_plan.cmake" "${tmpoutStr}")
+if(NOT OUTPUT_LOCATION)
+    set(OUTPUT_LOCATION "cmake/plans/${abi}_plan.cmake")
+endif()
+
+message("Created new build plan for [${abi}]
+${tempOutStr}
+")
+
+file(WRITE "${OUTPUT_LOCATION}" "${tmpoutStr}")
