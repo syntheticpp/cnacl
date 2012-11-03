@@ -251,15 +251,29 @@ function(writeTypesHeaders types)
     print(out "#endif")
 
     string(REGEX REPLACE "\n;" "\n" tmpoutStr "${out}")
-    file(WRITE "${CMAKE_BINARY_DIR}/include_internal/crypto_types.h" "${tmpoutStr}")
+    file(WRITE "${CMAKE_BINARY_DIR}/include/crypto_types.h" "${tmpoutStr}")
 endfunction()
 
-function(makePlan abi)
+
+include("${CMAKE_SOURCE_DIR}/cmake/AbiName.cmake")
+AbiName_get(abi)
+message("Detected ABI as ${abi}")
+
+set(planPath "${CMAKE_SOURCE_DIR}/cmake/plans/${abi}_plan.cmake")
+
+## On apple systems, the assembler is different and it doesn't accept
+## a number of the asm files in NaCl
+if ("${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "Darwin")
+    set(planPath "${CMAKE_SOURCE_DIR}/cmake/plans/apple_${abi}_plan.cmake")
+endif()
+message("Using a [${CMAKE_HOST_SYSTEM_NAME}] toolchain.")
+
+if (NOT EXISTS "${planPath}")
     message("Could not find compile plan for this ABI, please wait while one is generated...")
     execute_process(COMMAND "${CMAKE_SOURCE_DIR}/do" WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}")
 
-    set(OUTPUT_LOCATION "${CMAKE_SOURCE_DIR}/cmake/plans/${abi}_plan.cmake")
     include("${CMAKE_SOURCE_DIR}/cmake/MakePlan.cmake")
+    makePlan("${abi}" "${path}")
 
     if (NOT EXISTS "${CMAKE_SOURCE_DIR}/cmake/plans/${abi}_plan.cmake")
         message("Can't find plan for the target ABI [${abi}].")
@@ -268,27 +282,11 @@ function(makePlan abi)
     message("Created new plan for ${abi} at ${CMAKE_SOURCE_DIR}/cmake/plans/${abi}_plan.cmake")
     file(READ "${CMAKE_SOURCE_DIR}/cmake/plans/${abi}_plan.cmake" plan)
     message("${plan}")
-endFunction()
-
-
-include("${CMAKE_SOURCE_DIR}/cmake/AbiName.cmake")
-AbiName_get(abi)
-message("Detected ABI as ${abi}")
-
-## On apple systems, the assembler is different and it doesn't accept
-## a number of the asm files in NaCl
-if ("${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "Darwin")
-    set(abi "${abi}_apple")
-endif()
-message("Using a [${CMAKE_HOST_SYSTEM_NAME}] toolchain.")
-
-if (NOT EXISTS "${CMAKE_SOURCE_DIR}/cmake/plans/${abi}_plan.cmake")
-    makePlan(${abi})
 else()
-    message("Using preexisting build plan ${CMAKE_SOURCE_DIR}/cmake/plans/${abi}_plan.cmake")
+    message("Using preexisting build plan ${planPath}")
 endif()
 
-include("${CMAKE_SOURCE_DIR}/cmake/plans/${abi}_plan.cmake")
+include("${planPath}")
 writeTypesHeaders("${PLAN_TYPES}")
 
 file(STRINGS "${CMAKE_SOURCE_DIR}/MACROS" MACROS)
