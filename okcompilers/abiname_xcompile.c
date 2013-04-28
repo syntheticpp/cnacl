@@ -1,6 +1,9 @@
 #if defined(__amd64__) || defined(__x86_64__) || defined(__AMD64__) || defined(_M_X64) || defined(__amd64)
    #error ABI_IS_amd64__
 #elif defined(__i386__) || defined(__x86__) || defined(__X86__) || defined(_M_IX86) || defined(__i386)
+   #ifndef __SSE2__
+       #error ABI_IS_x86_NO_SSE2
+   #endif
    #error ABI_IS_x86__
 #elif defined(__ia64__) || defined(__IA64__) || defined(__M_IA64)
    #error ABI_IS_ia64__
