@@ -4,7 +4,7 @@ function(AbiName_get outputVar)
         ${CMAKE_SOURCE_DIR}/okcompilers/abiname_xcompile.c
         OUTPUT_VARIABLE compileOut
     )
-    string(REGEX MATCH "ABI_IS_.*__" abi "${compileOut}")
+    string(REGEX MATCH "ABI_IS_[^ ]*__" abi "${compileOut}")
     string(REGEX REPLACE "ABI_IS_(.*)__" "\\1" abi "${abi}")
     set(${outputVar} ${abi} PARENT_SCOPE)
 endfunction()
