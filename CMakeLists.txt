@@ -220,7 +220,7 @@ function(executePlan implementations)
         string(REGEX REPLACE "\n;" "\n" tmpoutStr "${opOut}")
         file(WRITE "${CMAKE_BINARY_DIR}/${op}/CMakeLists.txt" "${tmpoutStr}")
         set(opOut "")
-        add_subdirectory("${CMAKE_BINARY_DIR}/${op}")
+        add_subdirectory("${CMAKE_BINARY_DIR}/${op}" "${CMAKE_BINARY_DIR}/${op}")
     endforeach()
 
     include("${CMAKE_SOURCE_DIR}/cmake/libutils.cmake")
