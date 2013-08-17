@@ -44,12 +44,13 @@ list(REMOVE_ITEM tests
     ${CMAKE_CURRENT_SOURCE_DIR}/auth5.c
     ${CMAKE_CURRENT_SOURCE_DIR}/auth.c
     ${CMAKE_CURRENT_SOURCE_DIR}/core3.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/core4.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/core6.c
+#    ${CMAKE_CURRENT_SOURCE_DIR}/core4.c
+#    ${CMAKE_CURRENT_SOURCE_DIR}/core6.c
     ${CMAKE_CURRENT_SOURCE_DIR}/hash3.c
     ${CMAKE_CURRENT_SOURCE_DIR}/hash.c
     ${CMAKE_CURRENT_SOURCE_DIR}/stream2.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/stream.c)
+    ${CMAKE_CURRENT_SOURCE_DIR}/stream.c
+)
 
 foreach(plan ${PLAN_IMPLEMENTATIONS})
     list(APPEND prim_includes ${CMAKE_BINARY_DIR}/${plan}/..)

@@ -263,6 +263,7 @@ endfunction()
 
 include("${CMAKE_SOURCE_DIR}/cmake/AbiName.cmake")
 AbiName_get(abi)
+set(abi x86_NO_SSE2)
 message(STATUS "Detected ABI as ${abi}")
 
 set(planPath "${CMAKE_SOURCE_DIR}/cmake/plans/${abi}_plan.cmake")
