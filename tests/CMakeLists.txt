@@ -37,11 +37,32 @@ Primitives_get("${OPERATIONS}" opPrimitives)
 
 # Anything in this dir which ends with ".c" is considered a test.
 file(GLOB tests "*.c")
+
+list(REMOVE_ITEM tests
+    ${CMAKE_CURRENT_SOURCE_DIR}/auth2.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/auth3.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/auth5.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/auth.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/core3.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/core4.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/core6.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/hash3.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/hash.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/stream2.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/stream.c)
+
+foreach(plan ${PLAN_IMPLEMENTATIONS})
+    list(APPEND prim_includes ${CMAKE_BINARY_DIR}/${plan}/..)
+endforeach()
+include_directories(${prim_includes})
+
+
 foreach(test_source_fullpath ${tests})
     string(REGEX REPLACE "^.*/" "" test_source ${test_source_fullpath})
     string(REPLACE ".c" "_test" test_bin ${test_source})
     set(allTests "")
 
+if(0)
     dependenciesForFile(${test_source_fullpath} "${OPERATIONS}" depends)
     foreach(op ${depends})
         foreach(opPrim ${opPrimitives})
@@ -58,11 +79,12 @@ foreach(test_source_fullpath ${tests})
             endif()
         endforeach()
     endforeach()
+endif()
 
     if("${depends}" STREQUAL "")
         add_executable(${test_bin} ${test_source})
         target_link_libraries(${test_bin} nacl randombytes)
-        add_test(${test_bin} ${test_bin})
+        add_test(${test_bin} ${EXECUTABLE_OUTPUT_PATH}/${test_bin})
         list(APPEND allTests ${test_bin})
     endif()
 

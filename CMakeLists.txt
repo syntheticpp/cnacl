@@ -9,14 +9,18 @@ if(CNACL_CONFIG_SCRIPT)
     include(${CNACL_CONFIG_SCRIPT})
 endif()
 
+
+set(EXECUTABLE_OUTPUT_PATH  ${CMAKE_BINARY_DIR}/bin)
+set(LIBRARY_OUTPUT_PATH ${CMAKE_BINARY_DIR}/lib)
+
 file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/include")
 file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/include_internal")
 add_subdirectory(randombytes)
 
 if(CMAKE_VERSION VERSION_LESS 2.8.4)
-    message("Parallel building (-j) will not be available.")
-    message("To build in parallel, upgrade to cmake 2.8.4 or newer.")
-    message("see: http://www.cmake.org/Bug/print_bug_page.php?bug_id=10395")
+    message(STATUS "Parallel building (-j) will not be available.")
+    message(STATUS "To build in parallel, upgrade to cmake 2.8.4 or newer.")
+    message(STATUS "see: http://www.cmake.org/Bug/print_bug_page.php?bug_id=10395")
 endif()
 
 #################################
@@ -150,23 +154,25 @@ function(doOperationPrimitiveImplementation
 
     set(lib "${operation}_${primitive}_${implementation}")
 
-    print(tmpout "set(CMAKE_CURRENT_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})")
-    print(tmpout "include_directories(
-        \"${CMAKE_BINARY_DIR}/${operation}/${primitive}\"
-        \"${CMAKE_BINARY_DIR}/${opiPath}\"
-        \"${CMAKE_BINARY_DIR}/include\"
-        \"${CMAKE_BINARY_DIR}/include_internal\"
-    )")
+    set(tmpoutStr "
 
-    print(tmpout "add_library(${lib} ${files})")
-    print(tmpout "set_target_properties(${lib} PROPERTIES LINKER_LANGUAGE C)")
+set(files ${files})
 
-    string(REGEX REPLACE "\n;" "\n" tmpoutStr "${tmpout}")
+foreach(file \${files})
+    file(APPEND \${CMAKE_BINARY_DIR}/nacl_prop.cmake \"set_source_files_properties(\${file} PROPERTY COMPILE_FLAGS \\\"-I${CMAKE_BINARY_DIR}/${operation}/${primitive} -I${CMAKE_BINARY_DIR}/${opiPath}\\\")\n\")
+endforeach()
+
+set(all_files \${all_files} \${files} CACHE STRING \"all files\" FORCE)
+
+")
+
+    #string(REGEX REPLACE "\n;" "\n" tmpoutStr "${tmpout}")
     file(WRITE "${CMAKE_BINARY_DIR}/${opiPath}/CMakeLists.txt" "${tmpoutStr}")
 endfunction()
 
 function(executePlan implementations)
     set(opPrimitives "")
+    set(all_files "" CACHE STRING "all_files" FORCE)
     foreach(line ${implementations})
         string(REGEX REPLACE "/[^/]*$" "" opSlashPrim ${line})
         string(REPLACE "/" "_" opPrim ${opSlashPrim})
@@ -223,8 +229,8 @@ function(executePlan implementations)
         add_subdirectory("${CMAKE_BINARY_DIR}/${op}" "${CMAKE_BINARY_DIR}/${op}")
     endforeach()
 
-    include("${CMAKE_SOURCE_DIR}/cmake/libutils.cmake")
-    merge_static_libs(nacl nacl "${libraries}")
+    #include("${CMAKE_SOURCE_DIR}/cmake/libutils.cmake")
+    #merge_static_libs(nacl nacl "${libraries}")
     #add_dependencies(nacl randombytes)
 endFunction()
 
@@ -257,7 +263,7 @@ endfunction()
 
 include("${CMAKE_SOURCE_DIR}/cmake/AbiName.cmake")
 AbiName_get(abi)
-message("Detected ABI as ${abi}")
+message(STATUS "Detected ABI as ${abi}")
 
 set(planPath "${CMAKE_SOURCE_DIR}/cmake/plans/${abi}_plan.cmake")
 
@@ -266,24 +272,24 @@ set(planPath "${CMAKE_SOURCE_DIR}/cmake/plans/${abi}_plan.cmake")
 if ("${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "Darwin")
     set(planPath "${CMAKE_SOURCE_DIR}/cmake/plans/apple_${abi}_plan.cmake")
 endif()
-message("Using a [${CMAKE_HOST_SYSTEM_NAME}] toolchain.")
+message(STATUS "Using a [${CMAKE_HOST_SYSTEM_NAME}] toolchain.")
 
 if (NOT EXISTS "${planPath}")
-    message("Could not find compile plan for this ABI, please wait while one is generated...")
+    message(STATUS "Could not find compile plan for this ABI, please wait while one is generated...")
     execute_process(COMMAND "${CMAKE_SOURCE_DIR}/do" WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}")
 
     include("${CMAKE_SOURCE_DIR}/cmake/MakePlan.cmake")
     makePlan("${abi}" "${planPath}")
 
     if (NOT EXISTS "${planPath}")
-        message("Can't find plan for the target ABI [${abi}].")
+        message(STATUS "Can't find plan for the target ABI [${abi}].")
         message(FATAL_ERROR "Cross compiling is not supported without a premade plan.")
     endif()
-    message("Created new plan for ${abi} at ${planPath}")
+    message(STATUS "Created new plan for ${abi} at ${planPath}")
     file(READ "${planPath}" plan)
-    message("${plan}")
+    message(STATUS "${plan}")
 else()
-    message("Using preexisting build plan ${planPath}")
+    message(STATUS "Using preexisting build plan ${planPath}")
 endif()
 
 include("${planPath}")
@@ -296,5 +302,14 @@ file(STRINGS "${CMAKE_SOURCE_DIR}/OPERATIONS" OPERATIONS)
 executePlan("${PLAN_IMPLEMENTATIONS}")
 
 
+include_directories("/home/synth/sandbox/nacl/cnacl-build/include"
+                    "/home/synth/sandbox/nacl/cnacl-build/include_internal")
+
+add_library(nacl ${all_files})
+
+include(${CMAKE_BINARY_DIR}/nacl_prop.cmake)
+
 enable_testing()
 add_subdirectory(tests)
+
+
