@@ -15,7 +15,7 @@ set(PLAN_IMPLEMENTATIONS
 #"crypto_core/salsa2012/ref"
 #"crypto_verify/32/ref"
 #"crypto_hash/sha256/ref"
-#"crypto_core/salsa20/ref"
+"crypto_core/salsa20/ref"
 #"crypto_auth/hmacsha256/ref"
 #"crypto_sign/edwards25519sha512batch/ref"
 "crypto_secretbox/xsalsa20poly1305/ref"
@@ -32,3 +32,4 @@ set(PLAN_TYPES
 "typedef int crypto_int32;"
 "typedef unsigned int crypto_uint32;"
 )
+

@@ -142,6 +142,7 @@ function(doOperationPrimitiveImplementation
     implementation
     allOpPrimitives
     runTest
+    sources
 )
     #message("${operation} --- ${primitive} --- ${implementation}")
     #message("${allOpPrimitives}")
@@ -151,28 +152,17 @@ function(doOperationPrimitiveImplementation
     file(WRITE "${CMAKE_BINARY_DIR}/include/${operation}_${primitive}.h" "${output}")
 
     file(GLOB files "${CMAKE_SOURCE_DIR}/${opiPath}/*.[csS]")
+    foreach(file ${files})
+        set_source_files_properties(${file} PROPERTY COMPILE_FLAGS "-I${CMAKE_BINARY_DIR}/${opiPath} -I${CMAKE_BINARY_DIR}/${opiPath}")
+    endforeach()
 
-    set(lib "${operation}_${primitive}_${implementation}")
-
-    set(tmpoutStr "
-
-set(files ${files})
-
-foreach(file \${files})
-    file(APPEND \${CMAKE_BINARY_DIR}/nacl_prop.cmake \"set_source_files_properties(\${file} PROPERTY COMPILE_FLAGS \\\"-I${CMAKE_BINARY_DIR}/${operation}/${primitive} -I${CMAKE_BINARY_DIR}/${opiPath}\\\")\n\")
-endforeach()
-
-set(all_files \${all_files} \${files} CACHE STRING \"all files\" FORCE)
-
-")
-
-    #string(REGEX REPLACE "\n;" "\n" tmpoutStr "${tmpout}")
-    file(WRITE "${CMAKE_BINARY_DIR}/${opiPath}/CMakeLists.txt" "${tmpoutStr}")
+    set(${sources} ${files} PARENT_SCOPE)
 endfunction()
 
-function(executePlan implementations)
+
+function(executePlan implementations all_files)
     set(opPrimitives "")
-    set(all_files "" CACHE STRING "all_files" FORCE)
+
     foreach(line ${implementations})
         string(REGEX REPLACE "/[^/]*$" "" opSlashPrim ${line})
         string(REPLACE "/" "_" opPrim ${opSlashPrim})
@@ -181,25 +171,24 @@ function(executePlan implementations)
 
     set(operations "")
 
+    set(all_sources "")
     foreach(line ${implementations})
         string(REPLACE "/" ";" newLine ${line})
         list(GET newLine 0 op)
         list(GET newLine 1 prim)
         list(GET newLine 2 impl)
 
-        doOperationPrimitiveImplementation(${op} ${prim} ${impl} "${opPrimitives}" FALSE)
+        doOperationPrimitiveImplementation(${op} ${prim} ${impl} "${opPrimitives}" FALSE sources)
 
-        set("${op}_primitives"
-            "${${op}_primitives};${prim}"
-            CACHE INTERNAL "primitives by operation" FORCE
-        )
-        set("${op}_${prim}_implementations"
-            "${${op}_${prim}_implementations};${impl}"
-            CACHE INTERNAL "implementations by primitivie" FORCE
-        )
+        list(APPEND all_sources ${sources})
+
+        set(${op}_primitives ${${op}_primitives} ${prim} CACHE INTERNAL "primitives by operation" FORCE)
+        set(${op}_${prim}_implementations  ${${op}_${prim}_implementations} ${impl} CACHE INTERNAL "implementations by primitivie" FORCE)
 
         list(APPEND operations "${op}")
     endforeach()
+
+    set(${all_files} ${all_sources} PARENT_SCOPE)
 
     set(libraries "")
 
@@ -210,29 +199,23 @@ function(executePlan implementations)
         foreach(prim ${${op}_primitives})
             list(REMOVE_DUPLICATES ${op}_${prim}_implementations)
             #message("${op} ---- ${prim}")
+            #message("_implementations : ${${op}_${prim}_implementations}")
             foreach(impl ${${op}_${prim}_implementations})
                 #message("${op} === ${prim} === ${impl}")
                 print(tmpout "add_subdirectory(${impl})")
                 list(APPEND libraries "${op}_${prim}_${impl}")
+                writeOperationHeader("${op}" "${prim}" output)
+                file(WRITE "${CMAKE_BINARY_DIR}/${op}/${prim}/${impl}/${op}.h" "${output}")
+                list(FIND SELECTED_API_HEADERS ${op} found)
+                if(found GREATER -1)
+                    file(WRITE "${CMAKE_BINARY_DIR}/include/${op}.h" "${output}")
+                endif()
             endforeach()
-            string(REGEX REPLACE "\n;" "\n" tmpoutStr "${tmpout}")
-            file(WRITE "${CMAKE_BINARY_DIR}/${op}/${prim}/CMakeLists.txt" "${tmpoutStr}")
-            set(tmpout "")
-            print(opOut "add_subdirectory(${prim})")
-
-            writeOperationHeader("${op}" "${prim}" output)
-            file(WRITE "${CMAKE_BINARY_DIR}/${op}/${prim}/${op}.h" "${output}")
         endforeach()
-        string(REGEX REPLACE "\n;" "\n" tmpoutStr "${opOut}")
-        file(WRITE "${CMAKE_BINARY_DIR}/${op}/CMakeLists.txt" "${tmpoutStr}")
-        set(opOut "")
-        add_subdirectory("${CMAKE_BINARY_DIR}/${op}" "${CMAKE_BINARY_DIR}/${op}")
-    endforeach()
 
-    #include("${CMAKE_SOURCE_DIR}/cmake/libutils.cmake")
-    #merge_static_libs(nacl nacl "${libraries}")
-    #add_dependencies(nacl randombytes)
+    endforeach()
 endFunction()
+
 
 function(writeTypesHeaders types)
     foreach(intfile
@@ -263,7 +246,9 @@ endfunction()
 
 include("${CMAKE_SOURCE_DIR}/cmake/AbiName.cmake")
 AbiName_get(abi)
-set(abi x86_NO_SSE2)
+if(MSVC)
+	set(abi ref)
+endif()
 message(STATUS "Detected ABI as ${abi}")
 
 set(planPath "${CMAKE_SOURCE_DIR}/cmake/plans/${abi}_plan.cmake")
@@ -300,17 +285,20 @@ file(STRINGS "${CMAKE_SOURCE_DIR}/MACROS" MACROS)
 file(STRINGS "${CMAKE_SOURCE_DIR}/PROTOTYPES.c" PROTOTYPES)
 file(STRINGS "${CMAKE_SOURCE_DIR}/PROTOTYPES.cpp" PROTOTYPES_CPP)
 file(STRINGS "${CMAKE_SOURCE_DIR}/OPERATIONS" OPERATIONS)
-executePlan("${PLAN_IMPLEMENTATIONS}")
 
 
-include_directories("/home/synth/sandbox/nacl/cnacl-build/include"
-                    "/home/synth/sandbox/nacl/cnacl-build/include_internal")
+set(SELECTED_API_HEADERS crypto_box crypto_secretbox)
 
-add_library(nacl ${all_files})
+executePlan("${PLAN_IMPLEMENTATIONS}" nacl_files)
 
-include(${CMAKE_BINARY_DIR}/nacl_prop.cmake)
 
-enable_testing()
-add_subdirectory(tests)
+include_directories("${CMAKE_BINARY_DIR}/include" "${CMAKE_BINARY_DIR}/include_internal")
+
+add_library(nacl ${nacl_files})
+
+if(tests)
+    enable_testing()
+    add_subdirectory(tests)
+endif()
 
 
