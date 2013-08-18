@@ -4,12 +4,6 @@
 project(nacl C)
 cmake_minimum_required(VERSION 2.4)
 
-# Generic hook to allow arbitrary cmake code to be run for preconfiguration.
-if(CNACL_CONFIG_SCRIPT)
-    include(${CNACL_CONFIG_SCRIPT})
-endif()
-
-
 set(EXECUTABLE_OUTPUT_PATH  ${CMAKE_BINARY_DIR}/bin)
 set(LIBRARY_OUTPUT_PATH ${CMAKE_BINARY_DIR}/lib)
 
@@ -17,21 +11,21 @@ file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/include")
 file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/include_internal")
 add_subdirectory(randombytes)
 
-if(CMAKE_VERSION VERSION_LESS 2.8.4)
-    message(STATUS "Parallel building (-j) will not be available.")
-    message(STATUS "To build in parallel, upgrade to cmake 2.8.4 or newer.")
-    message(STATUS "see: http://www.cmake.org/Bug/print_bug_page.php?bug_id=10395")
+
+
+if(NOT MSVC)
+    enable_language(ASM)
+    set(CMAKE_ASM_COMPILER_ARG1 "${MY_CMAKE_ASM_FLAGS} -c")
 endif()
 
-#################################
 
-enable_language(ASM)
-set(CMAKE_ASM_COMPILER_ARG1 "${MY_CMAKE_ASM_FLAGS} -c")
-
+#-----------------------------------------------------------------------------------
 macro(print appendTo content)
     list(APPEND ${appendTo} "${content}\n")
 endmacro()
 
+
+#-----------------------------------------------------------------------------------
 ##
 # Create a header file for an operation/primitive such as crypto_stream/salsa20.
 # NOTE: Not all primitives are required to behave the same for a given operation.
@@ -67,6 +61,8 @@ function(writeOperationHeader operation primitive output)
     set(${output} ${tmpoutStr} PARENT_SCOPE)
 endfunction()
 
+
+#-----------------------------------------------------------------------------------
 ##
 # Create a header file for an operation/primitive/implementation
 # such as crypto_stream/salsa20/amd64_xmm.
@@ -136,6 +132,8 @@ function(writeOperationPrimitiveHeader operation primitive implementation output
     set(${output} ${tmpoutStr} PARENT_SCOPE)
 endfunction()
 
+
+#-----------------------------------------------------------------------------------
 function(doOperationPrimitiveImplementation
     operation
     primitive
@@ -160,6 +158,7 @@ function(doOperationPrimitiveImplementation
 endfunction()
 
 
+#-----------------------------------------------------------------------------------
 function(executePlan implementations all_files)
     set(opPrimitives "")
 
@@ -190,8 +189,6 @@ function(executePlan implementations all_files)
 
     set(${all_files} ${all_sources} PARENT_SCOPE)
 
-    set(libraries "")
-
     cmake_policy(SET CMP0007 NEW)
     list(REMOVE_DUPLICATES operations)
     foreach(op ${operations})
@@ -202,8 +199,6 @@ function(executePlan implementations all_files)
             #message("_implementations : ${${op}_${prim}_implementations}")
             foreach(impl ${${op}_${prim}_implementations})
                 #message("${op} === ${prim} === ${impl}")
-                print(tmpout "add_subdirectory(${impl})")
-                list(APPEND libraries "${op}_${prim}_${impl}")
                 writeOperationHeader("${op}" "${prim}" output)
                 file(WRITE "${CMAKE_BINARY_DIR}/${op}/${prim}/${impl}/${op}.h" "${output}")
                 list(FIND SELECTED_API_HEADERS ${op} found)
@@ -217,6 +212,7 @@ function(executePlan implementations all_files)
 endFunction()
 
 
+#-----------------------------------------------------------------------------------
 function(writeTypesHeaders types)
     foreach(intfile
         "crypto_uint8.h"
@@ -244,14 +240,18 @@ function(writeTypesHeaders types)
 endfunction()
 
 
+
+#-----------------------------------------------------------------------------------
 include("${CMAKE_SOURCE_DIR}/cmake/AbiName.cmake")
 AbiName_get(abi)
 if(MSVC)
-	set(abi ref)
+    set(abi ref)
 endif()
 message(STATUS "Detected ABI as ${abi}")
 
 set(planPath "${CMAKE_SOURCE_DIR}/cmake/plans/${abi}_plan.cmake")
+
+
 
 ## On apple systems, the assembler is different and it doesn't accept
 ## a number of the asm files in NaCl
@@ -278,6 +278,8 @@ else()
     message(STATUS "Using preexisting build plan ${planPath}")
 endif()
 
+
+#-----------------------------------------------------------------------------------
 include("${planPath}")
 writeTypesHeaders("${PLAN_TYPES}")
 
@@ -285,17 +287,16 @@ file(STRINGS "${CMAKE_SOURCE_DIR}/MACROS" MACROS)
 file(STRINGS "${CMAKE_SOURCE_DIR}/PROTOTYPES.c" PROTOTYPES)
 file(STRINGS "${CMAKE_SOURCE_DIR}/PROTOTYPES.cpp" PROTOTYPES_CPP)
 file(STRINGS "${CMAKE_SOURCE_DIR}/OPERATIONS" OPERATIONS)
-
-
 set(SELECTED_API_HEADERS crypto_box crypto_secretbox)
-
 executePlan("${PLAN_IMPLEMENTATIONS}" nacl_files)
 
 
+#-----------------------------------------------------------------------------------
 include_directories("${CMAKE_BINARY_DIR}/include" "${CMAKE_BINARY_DIR}/include_internal")
-
 add_library(nacl ${nacl_files})
 
+
+#-----------------------------------------------------------------------------------
 if(tests)
     enable_testing()
     add_subdirectory(tests)
