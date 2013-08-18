@@ -89,17 +89,20 @@ function(writeOperationPrimitiveHeader operation primitive implementation output
         print(tmpout "${out}")
     endforeach()
 
+
     # C++
-    print(tmpout "#ifdef __cplusplus")
-    print(tmpout "#include <string>")
-    foreach(prototype ${PROTOTYPES_CPP})
-        if("${prototype}" MATCHES "${operation}$|${operation}\\(|${operation}_")
-            string(REGEX REPLACE "${operation}" "${opi}" out "${prototype}")
-            print(tmpout "${out}")
-        endif()
-    endforeach()
+    print(tmpout "\n#ifdef __cplusplus")
+    if(cpp)
+        print(tmpout "#include <string>")
+        foreach(prototype ${PROTOTYPES_CPP})
+            if("${prototype}" MATCHES "${operation}$|${operation}\\(|${operation}_")
+                string(REGEX REPLACE "${operation}" "${opi}" out "${prototype}")
+                print(tmpout "${out}")
+            endif()
+        endforeach()
+    endif()
     print(tmpout "extern \"C\" {")
-    print(tmpout "#endif")
+    print(tmpout "#endif\n")
 
     # C
     foreach(prototype ${PROTOTYPES})
@@ -109,9 +112,9 @@ function(writeOperationPrimitiveHeader operation primitive implementation output
         endif()
     endforeach()
 
-    print(tmpout "#ifdef __cplusplus")
+    print(tmpout "\n#ifdef __cplusplus")
     print(tmpout "}")
-    print(tmpout "#endif")
+    print(tmpout "#endif\n")
 
     foreach(macro ${MACROS})
         if("${macro}" MATCHES "${operation}$|${operation}\\(|${operation}_")
@@ -285,7 +288,9 @@ writeTypesHeaders("${PLAN_TYPES}")
 
 file(STRINGS "${CMAKE_SOURCE_DIR}/MACROS" MACROS)
 file(STRINGS "${CMAKE_SOURCE_DIR}/PROTOTYPES.c" PROTOTYPES)
-file(STRINGS "${CMAKE_SOURCE_DIR}/PROTOTYPES.cpp" PROTOTYPES_CPP)
+if(cpp)
+    file(STRINGS "${CMAKE_SOURCE_DIR}/PROTOTYPES.cpp" PROTOTYPES_CPP)
+endif()
 file(STRINGS "${CMAKE_SOURCE_DIR}/OPERATIONS" OPERATIONS)
 set(SELECTED_API_HEADERS crypto_box crypto_secretbox)
 executePlan("${PLAN_IMPLEMENTATIONS}" nacl_files)
